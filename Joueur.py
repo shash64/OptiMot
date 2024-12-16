@@ -6,8 +6,25 @@ class Joueur: #Classe Joueur permettant de referencer un joueur par des attribut
         Joueur.id_counter += 1
         self.nom = nom #nom du joueur
         self.nbPoints = 0 #nombre de points du joueur
-        self.proposition = "" #mot proposé par le joueur
+        self.proposition = "" #mot proposé par le joueur pour mot long
+        self.main = [] #main du joueur pour optiMot
 
     def addnbPoints(self, nbPoints): #fonction pour ajouter des points au score total du joueur
         self.nbPoints += nbPoints
+
+    def afficher_main(self):
+        return [str(carte) for carte in self.main]
+
+    def ajouter_carte(self, carte):
+        self.main.append(carte)
+
+    def retirer_carte(self, lettre):
+        if lettre in self.main:
+            return self.main.remove(lettre)
+        else:
+            print(f"Le joueur {self.nom} ne possède pas la lettre {lettre}.")
+
+
+
+
 

@@ -38,10 +38,14 @@ class Jeu: #Classe jeu pour gérer tous les élements lié a une partie
         print(mot)
     
     #Fonction prenant en parametre un joueur et un mot proposé, et verifie sa proposition avant de l'ajouter a son attribut
-    def proposition(self,player,motPropose):
-        tabMotPropose = list(motPropose) #Transformation de la chaine de caractere en tableau de caractère
+    def proposition(self,player,motProposefirst):
+        motPropose = "".join(motProposefirst.split(",")) #Transformation de la chaine de caractere en tableau de caractère
+        tabMotPropose = list(motPropose)
         copieTabMot = self.tabMots[:] #Creation d'une copie des lettre du jeu pour pouvoir les manipuler 
+        print(tabMotPropose)
+        print(copieTabMot)
         for lettre in tabMotPropose:    #Pour chaque lettre du mot de l'utilisateur
+            print(lettre)
             if lettre in copieTabMot:   #Si elle est dans la copie des lettres
                 copieTabMot.remove(lettre) #On la supprime de la copie
             else:
@@ -75,15 +79,24 @@ class Jeu: #Classe jeu pour gérer tous les élements lié a une partie
 
     def comparaison(self):#Une fonction pour comparer les mots lequelle est plus long
         MotPlusLong=""#Une chaine vide pour stocker le mot le plus long
-        NomJoueurDuMotPlusLong=""#une chaine vide pour stocker le nom du joueur ayant le mot le plus long 
-        IdJoueurDuMotPlusLong=0#on initialise l'id a 0
+        NomJoueurDuMotPlusLong=[]#une chaine vide pour stocker le nom du joueur ayant le mot le plus long 
+        IdJoueurDuMotPlusLong=[]#on initialise l'id a 0
         for i in range(self.nbJoueurs):#Une boucle qui va iterer sur le nombre de joueurs 
             if(len(self.tabJoueurs[i].proposition) > len(MotPlusLong)):#on compare a chaque fois la proposition du joueur selectionne avec le mot le plus long si la condition est vraie 
+                IdJoueurDuMotPlusLong=[]
+                IdJoueurDuMotPlusLong.append(i)
+                NomJoueurDuMotPlusLong=[]
+                NomJoueurDuMotPlusLong.append(self.tabJoueurs[i].nom)
                 MotPlusLong=self.tabJoueurs[i].proposition#alors on stocke la proposition dans le MotPlusLong 
-                NomJoueurDuMotPlusLong=self.tabJoueurs[i].nom#on stocke aussi le nom du joueur ayant le mot le plus long 
-                IdJoueurDuMotPlusLong=self.tabJoueurs[i].id#on stocke aussi l'id de ce dernier(joueur ayant le mot le plus long)
-        self.tabJoueurs[IdJoueurDuMotPlusLong-1].addnbPoints(len(MotPlusLong))#Apres avoir comparé toutes les propositions de chacun des joueurs on rajoute des points au joueur ayant le mot le plus long 
-        print("Le joueur "+NomJoueurDuMotPlusLong+" à marqué "+str(len(MotPlusLong))+" points avec le mot "+MotPlusLong)#on fait l'affichage du joueur ayant le mot le plus long avec le mot tout en affichant les points qu'il a marqué 
+                #NomJoueurDuMotPlusLong=self.tabJoueurs[i].nom#on stocke aussi le nom du joueur ayant le mot le plus long 
+                #IdJoueurDuMotPlusLong=self.tabJoueurs[i].id#on stocke aussi l'id de ce dernier(joueur ayant le mot le plus long)
+            elif len(self.tabJoueurs[i].proposition) == len(MotPlusLong):
+                IdJoueurDuMotPlusLong.append(i)
+                NomJoueurDuMotPlusLong.append(self.tabJoueurs[i].nom)
+        for id in IdJoueurDuMotPlusLong:
+            self.tabJoueurs[id].addnbPoints(len(MotPlusLong))#Apres avoir comparé toutes les propositions de chacun des joueurs on rajoute des points au joueur ayant le mot le plus long 
+            #print("Le joueur "+NomJoueurDuMotPlusLong+" à marqué "+str(len(MotPlusLong))+" points avec le mot "+MotPlusLong)#on fait l'affichage du joueur ayant le mot le plus long avec le mot tout en affichant les points qu'il a marqué
+        
 
     
     #Fonction qui calcule quel mot était le plus long possible en fonction des lettres
@@ -111,6 +124,7 @@ class Jeu: #Classe jeu pour gérer tous les élements lié a une partie
                             motMax=mot       
         #On affiche quel mot était le plus long
         print("Le mot le plus long était : "+motMax)
+        return motMax
 
         
 def lancerPartie(self):
@@ -158,7 +172,13 @@ def lancerPartie(self):
             
         #print("Le mot le plus long était:" + motMax())
 
-    
+def reset():
+    self.tabMots=[]
+    for joueur in self.tabJoueurs:
+        joueur.nbPoints = 0
+        joueur.proposition = 0
+
+
 
 
 
