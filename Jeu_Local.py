@@ -2,7 +2,7 @@ import requests
 from time import sleep
 from Joueur import Joueur
 
-URL = "http://192.168.1.30:8888/"
+URL = "http://IPADRESSE:8888/"
 
 pseudo = ""
 
