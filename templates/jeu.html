@@ -26,6 +26,11 @@
             text-align: center;
         }
 
+        .deuxform{
+            display: inline-block; /* Place les formulaires côte à côte */
+            margin: 0 10px;
+        }
+
         input[type="text"], button {
             padding: 10px;
             font-size: 16px;
@@ -45,19 +50,19 @@
 
         .lettres-container {
             display: flex;
-            gap: 10px;
+            gap: 30px;
             margin: 20px 0;
         }
 
         .board-container {
             display: grid;
-            grid-template-columns: repeat(9, 40px);
-            gap: 5px;
+            grid-template-columns: repeat(9, 90px);
+            gap: 10px;
         }
 
         .tile, .lettre {
-            width: 40px;
-            height: 40px;
+            width: 80px;
+            height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -72,6 +77,10 @@
             cursor: grab;
         }
 
+        .hidden {
+            display: none;
+        }
+
         .lettre:active {
             cursor: grabbing;
         }
@@ -82,8 +91,8 @@
     <h2>Bonjour {{ joueur }}</h2>
 
     <form action="/tirer" method="POST">
-        <div>
-            <h3>{{ nbLettre }}</h3>
+        <h3>{{ nbLettre }}</h3>
+        <div id="lettresATirer" class="{{ 'hidden' if cacher_div else '' }}">
             <label for="mot">Proposez une lettre (c/v) :</label>
             <input type="text" id="lettre" name="lettre" required placeholder="Entrez votre lettre ici">
             <br><br>
@@ -101,15 +110,22 @@
     <!-- Plateau -->
     <div class="board-container" id="board"></div>
 
-    <div class="form-container">
+    <div class="form-container"> 
         <form action="/proposer" method="POST" id="proposition">
             <input type="hidden" name="tabLettres" id="lettres-proposees">
-            <button type="submit">Proposer</button>
+            <br><button type="submit" {% if disable %}disabled{% endif %}>Proposer</button><br>
         </form>
+        
     </div>
 
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <script>
+        
+        const socket = io();
+
+        window.onload = function () {
+            document.getElementById('lettre').focus();
+        };
 
         const board = document.getElementById('board');
         const lettersContainer = document.getElementById('lettres');
@@ -117,8 +133,9 @@
         const lettresCache = document.getElementById('lettres-proposees');
 
         proposeForm.addEventListener('submit', () => {
-        const tiles = Array.from(document.querySelectorAll('.tile'));
-        const lettres = tiles.map(tile => tile.textContent.trim()).filter(letter => letter !== "");
+            const tiles = Array.from(document.querySelectorAll('.tile'));
+            const lettres = tiles.map(tile => tile.textContent.trim()).filter(lettre => lettre !== '');
+            lettresCache.value = lettres;
         });
 
         // Créer les cases du plateau
@@ -128,7 +145,6 @@
             board.appendChild(tile);
         }
 
-        // Gestion du Drag-and-Drop
         let draggedElement = null;
 
         document.addEventListener('dragstart', (e) => {
@@ -153,9 +169,55 @@
             if (e.target.classList.contains('tile') && !e.target.hasChildNodes()) {
                 e.target.appendChild(draggedElement);
             } else if (e.target.id === 'lettres' && draggedElement) {
+                const lettersContainer = document.getElementById('lettres');
                 lettersContainer.appendChild(draggedElement);
             }
         });
+
+        socket.on('end_game', () => {
+            console.log("test");
+            window.location.href = '/affichageterminer'; // Redirection vers la page de jeu
+        });
+
+        socket.on('update_letters', (data) => {
+            const lettersContainer = document.getElementById('lettres');
+            lettersContainer.innerHTML = ''; // Vider les anciennes lettres
+            data.lettres.forEach(lettre => {
+                const lettreDiv = document.createElement('div');
+                lettreDiv.className = 'lettre';
+                lettreDiv.draggable = true;
+                lettreDiv.textContent = lettre;
+                lettersContainer.appendChild(lettreDiv);
+
+                if (data.lettres.length === 9) {
+                    tirerForm.style.display = 'none'; // Cache le formulaire
+                }
+            });
+        });
+
+        // Gestion de la soumission du formulaire "tirer"
+        const tirerForm = document.querySelector('form[action="/tirer"]');
+        tirerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(tirerForm);
+
+            fetch('/tirer', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const messageDiv = document.querySelector('h3'); // Le message à afficher
+                    messageDiv.textContent = data.message;
+
+                    if (data.success && data.lettres) {
+                        socket.emit('update_letters', { lettres: data.lettres }); // Mise à jour locale
+                    }
+                    document.getElementById('lettre').value = '';
+                })
+                .catch(err => console.error('Erreur:', err));
+        });
+
 
     </script>
 </body>

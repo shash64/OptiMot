@@ -74,8 +74,14 @@
         <input type="text" id="nomJoueur" name="nomJoueur" required>
         <button type="submit">Connexion</button>
     </form>
-    <form action="/demarrer" method="POST">
-        <button type="submit">Démarrer</button>
-    </form>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Écoute l'événement 'game_started' et redirige vers la page de jeu
+        socket.on('start_game', () => {
+            window.location.href = '/demarrer';  // Redirection vers la page de jeu
+        });
+    </script>
 </body>
 </html>
