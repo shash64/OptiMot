@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opti Mots</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .plateau {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 20px 0;
+        }
+
+        .section {
+            display: grid;
+            grid-template-columns: repeat(6, 40px);
+            grid-gap: 2px;
+            padding: 5px;
+        }
+
+        .section.milieu {
+            display: grid;
+            grid-template-columns: 40px;
+            grid-template-rows: repeat(6, 40px);
+            gap: 2px;
+            padding: 5px;
+        }
+
+        .case {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f4f4f9;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .case.remplie {
+            background-color: #eee;
+        }
+
+        .plateau-personnel {
+            display: flex;
+            gap: 10px;
+        }
+
+        .carte {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #ffcc00;
+            border: 1px solid #333;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: grab;
+        }
+
+        .carte.dragging {
+            opacity: 0.5;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Opti Mots</h1>
+
+    <div class="plateau">
+        <!-- Partie gauche -->
+        <div class="section gauche" id="plateau-gauche">
+            <!-- Cases de la partie gauche -->
+        </div>
+
+        <!-- Partie milieu -->
+        <div class="section milieu" id="plateau-milieu">
+            <!-- Lettres générées automatiquement -->
+        </div>
+
+        <!-- Partie droite -->
+        <div class="section droite" id="plateau-droite">
+            <!-- Cases de la partie droite -->
+        </div>
+    </div>
+
+    <div class="plateau-personnel" id="plateau-personnel">
+        <!-- Lettres de l'utilisateur -->
+    </div>
+
+    <button id="valider-btn" disabled>Valider mon coup</button>
+
+    <script>
+        // Générer la partie gauche et droite avec des cases vides
+        function genererSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            for (let i = 0; i < 36; i++) { // 6x6 cases
+                const caseElement = document.createElement('div');
+                caseElement.classList.add('case');
+                section.appendChild(caseElement);
+            }
+        }
+
+        genererSection('plateau-gauche');
+        genererSection('plateau-droite');
+
+        // Générer la partie milieu avec des lettres fixes verticales
+        const plateauMilieu = document.getElementById('plateau-milieu');
+        const lettresMilieu = ['M', 'O', 'T', 'S', 'O', 'P']; // Exemple de lettres verticales
+
+        lettresMilieu.forEach(lettre => {
+            const caseElement = document.createElement('div');
+            caseElement.classList.add('case', 'remplie');
+            caseElement.textContent = lettre;
+            plateauMilieu.appendChild(caseElement);
+        });
+
+        // Plateau personnel
+        const plateauPersonnel = document.getElementById('plateau-personnel');
+        const lettresUtilisateur = ['A', 'E', 'R', 'S', 'T', 'L', 'I']; // Exemple de lettres
+
+        // Générer les cartes de l'utilisateur
+        lettresUtilisateur.forEach(lettre => {
+            const carte = document.createElement('div');
+            carte.classList.add('carte');
+            carte.textContent = lettre;
+            carte.draggable = true;
+
+            // Événements de drag & drop
+            carte.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', lettre);
+                carte.classList.add('dragging');
+            });
+
+            carte.addEventListener('dragend', () => {
+                carte.classList.remove('dragging');
+            });
+
+            plateauPersonnel.appendChild(carte);
+        });
+
+        // Gérer le drag & drop sur les cases des sections gauche et droite
+        document.querySelectorAll('.section.gauche .case, .section.droite .case').forEach(caseElement => {
+            caseElement.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+
+            caseElement.addEventListener('drop', (e) => {
+                e.preventDefault();
+
+                const lettre = e.dataTransfer.getData('text/plain');
+                const section = caseElement.parentElement;
+                const index = Array.from(section.children).indexOf(caseElement);
+
+                if (!caseElement.textContent) {
+                    caseElement.textContent = lettre;
+                    caseElement.classList.add('remplie');
+                } else {
+                    // Si la case contient déjà une lettre, on insère la lettre correctement
+                    if (section.id === 'plateau-droite') {
+                        // Pousser les lettres vers la droite
+                        insertLetterRight(caseElement, lettre);
+                    } else if (section.id === 'plateau-gauche') {
+                        // Pousser les lettres vers la gauche
+                        insertLetterLeft(caseElement, lettre);
+                    }
+                }
+
+                // Désactiver la lettre dans le plateau personnel
+                const carte = Array.from(plateauPersonnel.children).find(c => c.textContent === lettre);
+                if (carte) {
+                    carte.draggable = false;
+                    carte.style.opacity = '0.5';
+                }
+            });
+        });
+
+        // Fonction pour insérer une lettre dans la section droite (pousser à droite)
+        function insertLetterRight(caseElement, lettre) {
+            // Récupérer le texte existant dans la case
+            const existingText = caseElement.textContent;
+
+            // Déplacer la lettre existante vers la droite
+            const nextCase = caseElement.nextElementSibling;
+            if (nextCase && !nextCase.textContent) {
+                nextCase.textContent = existingText;
+                nextCase.classList.add('remplie');
+            }
+
+            caseElement.textContent = lettre;
+            caseElement.classList.add('remplie');
+        }
+
+        // Fonction pour insérer une lettre dans la section gauche (pousser à gauche)
+        function insertLetterLeft(caseElement, lettre) {
+            // Récupérer le texte existant dans la case
+            const existingText = caseElement.textContent;
+
+            // Déplacer la lettre existante vers la gauche
+            const prevCase = caseElement.previousElementSibling;
+            if (prevCase && !prevCase.textContent) {
+                prevCase.textContent = existingText;
+                prevCase.classList.add('remplie');
+            }
+
+            caseElement.textContent = lettre;
+            caseElement.classList.add('remplie');
+        }
+
+        // Gérer le bouton valider
+        const validerBtn = document.getElementById('valider-btn');
+        validerBtn.disabled = false; // Activer après un coup
+        validerBtn.addEventListener('click', () => {
+            alert('Coup validé !');
+        });
+    </script>
+</body>
+</html>

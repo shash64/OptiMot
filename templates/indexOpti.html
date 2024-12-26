@@ -78,10 +78,10 @@
     </style>
 </head>
 <body>
-    <h1>Bienvenue dans Le Mot Le Plus Long</h1>
+    <h1>Bienvenue dans OptiMot</h1>
     <h2>{{ joueurConnecté }}</h2>
     <h1>{{ message }}</h1>
-    <form action="/inscription" method="POST">
+    <form action="/inscriptionOpti" method="POST">
         <label>Entrez votre nom de joueur</label>
         <input type="text" id="nomJoueur" name="nomJoueur" required>
         <button type="submit">Démarrer</button>
@@ -91,8 +91,8 @@
         const socket = io();
 
         // Écoute l'événement 'game_started' et redirige vers la page de jeu
-        socket.on('start_game', () => {
-            window.location.href = '/demarrer';  // Redirection vers la page de jeu
+        socket.on('start_game_opti', () => {
+            window.location.href = '/demarrerOpti';  // Redirection vers la page de jeu
         });
     </script>
 </body>

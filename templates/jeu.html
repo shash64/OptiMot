@@ -6,7 +6,7 @@
     <title>Jouer</title>
     <style>
         body {
-            background-color: #f4f4f9;
+            background-color: #f9fafc;
             margin: 0;
             padding: 0;
             display: flex;
@@ -14,43 +14,48 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         h1 {
-            color: #333;
-        }
-
-        .form-container {
+            color: #2c3e50;
             margin-bottom: 20px;
-            text-align: center;
         }
 
-        .deuxform{
-            display: inline-block; /* Place les formulaires côte à côte */
-            margin: 0 10px;
-        }
-
-        input[type="text"], button {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
+        .button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 10px;
         }
 
         button {
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
             background-color: #007bff;
-            color: white;
+            border: none;
+            border-radius: 8px;
             cursor: pointer;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
 
         button:hover {
             background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0px 6px 10px rgba(0, 123, 255, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .lettres-container {
             display: flex;
-            gap: 30px;
+            gap: 20px;
             margin: 20px 0;
         }
 
@@ -68,8 +73,16 @@
             justify-content: center;
             font-size: 1.2rem;
             font-weight: bold;
-            background-color: #eee;
-            border: 1px solid #ddd;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #dfe4ea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.15);
         }
 
         .lettre {
@@ -77,37 +90,47 @@
             cursor: grab;
         }
 
+        .lettre:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+            box-shadow: 0px 8px 12px rgba(0, 0, 0, 0.2);
+        }
+
         .hidden {
             display: none;
         }
 
-        .lettre:active {
-            cursor: grabbing;
+        #chrono {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #d9534f;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
     <h1>Le Mot Le Plus Long</h1>
     <h2>Bonjour {{ joueur }}</h2>
-
+    <div id="chrono" class="{{ 'hidden' if not cacher_div else '' }}">
+        Temps restant : {{ chrono if chrono else '' }}s
+    </div>
+    
+    <h3>{{ nbLettre }}</h3>
     <form action="/tirer" method="POST">
-        <h3>{{ nbLettre }}</h3>
         <div id="lettresATirer" class="{{ 'hidden' if cacher_div else '' }}">
-            <label for="mot">Proposez une lettre (c/v) :</label>
-            <input type="text" id="lettre" name="lettre" required placeholder="Entrez votre lettre ici">
-            <br><br>
-            <button type="submit">Tirer</button>
+            <button type="submit" name="typeLettre" value="c">Consonne</button>
+            <button type="submit" name="typeLettre" value="v">Voyelle</button>
             <h3>{{ affichageLettres }}</h3>
         </div>
-    </form>   
-    <!-- Affichage des lettres -->
+    </form>
+    
+
     <div class="lettres-container" id="lettres">
         {% for lettre in lettres %}
         <div class="lettre" draggable="true">{{ lettre }}</div>
         {% endfor %}
     </div>
 
-    <!-- Plateau -->
     <div class="board-container" id="board"></div>
 
     <div class="form-container"> 
@@ -122,20 +145,19 @@
     <script>
         
         const socket = io();
-
-        window.onload = function () {
+        window.onload = function(){
             document.getElementById('lettre').focus();
-        };
-
+        }
         const board = document.getElementById('board');
         const lettersContainer = document.getElementById('lettres');
         const proposeForm = document.getElementById('proposition');
         const lettresCache = document.getElementById('lettres-proposees');
 
+
         proposeForm.addEventListener('submit', () => {
-            const tiles = Array.from(document.querySelectorAll('.tile'));
-            const lettres = tiles.map(tile => tile.textContent.trim()).filter(lettre => lettre !== '');
-            lettresCache.value = lettres;
+        const tiles = Array.from(document.querySelectorAll('.tile'));
+        const lettres = tiles.map(tile => tile.textContent.trim()).filter(lettre => lettre !== '');
+        lettresCache.value = lettres;
         });
 
         // Créer les cases du plateau
@@ -145,6 +167,7 @@
             board.appendChild(tile);
         }
 
+        // Gestion du Drag-and-Drop
         let draggedElement = null;
 
         document.addEventListener('dragstart', (e) => {
@@ -169,55 +192,56 @@
             if (e.target.classList.contains('tile') && !e.target.hasChildNodes()) {
                 e.target.appendChild(draggedElement);
             } else if (e.target.id === 'lettres' && draggedElement) {
-                const lettersContainer = document.getElementById('lettres');
                 lettersContainer.appendChild(draggedElement);
             }
         });
 
+        socket.on('update_letters', (data) => {
+            console.log("test");
+            window.location.href = '/affichageLettre';  // Redirection vers la page de jeu
+        });
+
+
         socket.on('end_game', () => {
             console.log("test");
-            window.location.href = '/affichageterminer'; // Redirection vers la page de jeu
+            window.location.href = '/affichageterminer';  // Redirection vers la page de jeu
         });
 
-        socket.on('update_letters', (data) => {
-            const lettersContainer = document.getElementById('lettres');
-            lettersContainer.innerHTML = ''; // Vider les anciennes lettres
-            data.lettres.forEach(lettre => {
-                const lettreDiv = document.createElement('div');
-                lettreDiv.className = 'lettre';
-                lettreDiv.draggable = true;
-                lettreDiv.textContent = lettre;
-                lettersContainer.appendChild(lettreDiv);
+        socket.on('chrono', () => {
+            startChrono();
+        });
 
-                if (data.lettres.length === 9) {
-                    tirerForm.style.display = 'none'; // Cache le formulaire
+        let timeRemaining = 30;
+        const chronoElement = document.getElementById("chrono");
+
+        function startChrono() {
+            const interval = setInterval(() => {
+                timeRemaining -= 1;  // Décrémente le temps
+                chronoElement.innerText = `Temps restant : ${timeRemaining}s`;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(interval);  // Arrête le chrono
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/proposer';
+
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'tabLettres';
+                    input.value = ""; 
+
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
                 }
-            });
-        });
-
-        // Gestion de la soumission du formulaire "tirer"
-        const tirerForm = document.querySelector('form[action="/tirer"]');
-        tirerForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const formData = new FormData(tirerForm);
-
-            fetch('/tirer', {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    const messageDiv = document.querySelector('h3'); // Le message à afficher
-                    messageDiv.textContent = data.message;
-
-                    if (data.success && data.lettres) {
-                        socket.emit('update_letters', { lettres: data.lettres }); // Mise à jour locale
-                    }
-                    document.getElementById('lettre').value = '';
-                })
-                .catch(err => console.error('Erreur:', err));
-        });
-
+            }, 1000);  
+        }
+        
+        const data = JSON.parse('{{ data | tojson | safe }}');
+        if(data.name=='True'){
+            startChrono()
+        } 
 
     </script>
 </body>
