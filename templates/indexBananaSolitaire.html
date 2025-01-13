@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banana Solitaire</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .board, .player-rack {
+            display: grid;
+            gap: 5px;
+            margin: 20px 0;
+        }
+        .board {
+            grid-template-columns: repeat(15, 40px);
+            grid-template-rows: repeat(15, 40px);
+        }
+        .player-rack {
+            grid-template-columns: repeat(21, 40px);
+            grid-template-rows: 40px;
+        }
+        .tile, .cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ddd;
+            background-color: #fff;
+        }
+        .tile {
+            cursor: pointer;
+            user-select: none;
+        }
+        .tile.dragging {
+            opacity: 0.5;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>Banana Solitaire</h1>
+    <div class="board" id="board"></div>
+    <div class="player-rack" id="playerRack"></div>
+    <button class="btn" id="confirmButton">Confirmer le mot</button>
+    <p id="message"></p>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const board = document.getElementById('board');
+            const playerRack = document.getElementById('playerRack');
+            const confirmButton = document.getElementById('confirmButton');
+            const message = document.getElementById('message');
+            
+            // Initialize board
+            for (let i = 0; i < 15 * 15; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                board.appendChild(cell);
+            }
+
+            // Fetch initial player rack from the server
+            fetch('/initialiser', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const letters = data.plateau_joueur;
+                letters.forEach(letter => {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.textContent = letter;
+                    tile.draggable = true;
+                    playerRack.appendChild(tile);
+                });
+            });
+
+            // Drag and Drop functionality
+            let draggedTile = null;
+
+            document.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('tile')) {
+                    draggedTile = e.target;
+                    e.target.classList.add('dragging');
+                }
+            });
+
+            document.addEventListener('dragend', (e) => {
+                if (draggedTile) {
+                    draggedTile.classList.remove('dragging');
+                    draggedTile = null;
+                }
+            });
+
+            document.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (e.target.classList.contains('cell') || e.target.classList.contains('player-rack')) {
+                    e.target.style.border = '2px dashed #000';
+                }
+            });
+
+            document.addEventListener('dragleave', (e) => {
+                if (e.target.classList.contains('cell') || e.target.classList.contains('player-rack')) {
+                    e.target.style.border = '1px solid #ddd';
+                }
+            });
+
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedTile && (e.target.classList.contains('cell') || e.target.classList.contains('player-rack'))) {
+                    e.target.style.border = '1px solid #ddd';
+                    if (e.target.classList.contains('cell') && e.target.childNodes.length === 0) {
+                        e.target.appendChild(draggedTile);
+                    } else if (e.target.classList.contains('player-rack')) {
+                        playerRack.appendChild(draggedTile);
+                    }
+                }
+            });
+
+            confirmButton.addEventListener('click', () => {
+                const grid = [];
+                for (let y = 0; y < 15; y++) {
+                    const row = [];
+                    for (let x = 0; x < 15; x++) {
+                        const cell = board.children[y * 15 + x];
+                        if (cell.firstChild) {
+                            row.push(cell.firstChild.textContent);
+                        } else {
+                            row.push("");
+                        }
+                    }
+                    grid.push(row);
+                }
+
+                fetch('/confirmerPlateau', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(grid)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    message.textContent = data.message;
+                    if (data.status === 'success') {
+                        // Update the board with confirmed letters
+                        data.plateau.forEach((row, y) => {
+                            row.forEach((letter, x) => {
+                                const cell = board.children[y * 15 + x];
+                                if (letter) {
+                                    cell.textContent = letter;
+                                }
+                            });
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
