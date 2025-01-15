@@ -243,19 +243,12 @@ class JeuOptiMot:
 
 class JeuBananaSolitaire:
     def __init__(self):
-        # Initialisation du "régime" (les lettres disponibles)
-        self.regime = (
-            ["A"] * 14 + ["B"] * 3 + ["C"] * 4 + ["D"] * 4 + ["E"] * 21 +
-            ["F"] * 3 + ["G"] * 2 + ["H"] * 2 + ["I"] * 12 + ["J"] * 1 + ["K"] * 1 +
-            ["L"] * 7 + ["M"] * 4 + ["N"] * 9 + ["O"] * 9 + ["P"] * 3 + ["Q"] * 1 +
-            ["R"] * 9 + ["S"] * 9 + ["T"] * 9 + ["U"] * 9 + ["V"] * 3 + ["W"] * 1 +
-            ["X"] * 1 + ["Y"] * 1 + ["Z"] * 2
-        )
+        self.regime = (["A"] * 14 + ["B"] * 3 + ["C"] * 4 + ["D"] * 4 + ["E"] * 21 + ["F"] * 3 + ["G"] * 2 + ["H"] * 2 + ["I"] * 12 + ["J"] * 1 + ["K"] * 1 + ["L"] * 7 + ["M"] * 4 + ["N"] * 9 + ["O"] * 9 + ["P"] * 3 + ["Q"] * 1 + ["R"] * 9 + ["S"] * 9 + ["T"] * 9 + ["U"] * 9 + ["V"] * 3 + ["W"] * 1 + ["X"] * 1 + ["Y"] * 1 + ["Z"] * 2)
         random.shuffle(self.regime)
-
         self.plateauJoueur = []
-        self.plateauJeu = [[None for _ in range(15)] for _ in range(15)]  # Plateau 15x15
+        self.plateauJeu = [[]] 
         self.plateauProposition = [[]]
+
 
     def piocher_lettres(self, nombre):
         lettres = []
@@ -264,8 +257,10 @@ class JeuBananaSolitaire:
                 lettres.append(self.regime.pop())
         return lettres
 
+
     def initialiser_plateau_joueur(self):
         self.plateauJoueur = self.piocher_lettres(21)
+
 
     def verifier_mot_dictionnaire(self, mot):
         try:
@@ -277,40 +272,37 @@ class JeuBananaSolitaire:
         words = [line.strip() for line in words]
         return mot in words
 
+
     def extraireMots(self, plateau):
         mots = []
-        # Extraire les mots horizontaux
+        self.plateauProposition = plateau
         for ligne in plateau:
             mot = ""
             for i in range(len(ligne)):
                 if ligne[i] != "":
-                    mot += ligne[i]  # Ajouter la lettre au mot en cours
+                    mot += ligne[i]
                 else:
-                    if mot:  # Si on trouve un mot complet, on l'ajoute
+                    if mot: 
                         mots.append(mot)
-                    mot = ""  # Réinitialiser le mot en cours
-            if mot:  # Ajouter le dernier mot de la ligne si non vide
+                    mot = ""  
+            if mot:  
                 mots.append(mot)
 
-        # Extraire les mots verticaux
-        for col in range(len(plateau[0])):  # Parcours des colonnes
+        for col in range(len(plateau[0])):
             mot = ""
             for ligne in plateau:
                 if ligne[col] != "":
-                    mot += ligne[col]  # Ajouter la lettre au mot vertical
+                    mot += ligne[col]  
                 else:
-                    if mot:  # Si on trouve un mot vertical complet, on l'ajoute
+                    if mot:  
                         mots.append(mot)
-                    mot = ""  # Réinitialiser le mot vertical
-            if mot:  # Ajouter le dernier mot vertical si non vide
+                    mot = ""  
+            if mot:  
                 mots.append(mot)
 
-        # Filtrer pour obtenir uniquement les mots longs (comme CHAT et VALISE)
         mots = [mot for mot in mots if len(mot) > 1]
-        
         return mots
         
-    
 
     def comparer_avec_dictionnaire(self, mots_extraits):
         with open("ODS9.txt", 'r', encoding='utf-8') as file:
@@ -331,31 +323,61 @@ class JeuBananaSolitaire:
                 else:
                     high = mid - 1
             return False
-        
-        mots_invalides = []
+
+        mots_invalides= []
 
         for mot in mots_extraits:
             if not est_dans_dictionnaire(mot.upper()):
                 mots_invalides.append(mot)
-                print(mots_invalides)
-                return False
+
+        if mots_invalides:
+            return False, mots_invalides  
+        
+        else:
+            self.plateauJeu = self.plateauProposition
+            return True, []
+    
+    def est_Vide(grille):
+        for ligne in grille:
+            for cellule in ligne:
+                if cellule != "":
+                    return False
         return True
 
-    def echanger_lettre(self):
-        # Rendre une lettre et piocher trois nouvelles
-        if self.plateauJoueur:
-            lettre_rendue = self.plateauJoueur.pop()
-            self.regime.append(lettre_rendue)
-            random.shuffle(self.regime)  # Re-mélanger le régime
-            nouvelles_lettres = self.piocher_lettres(3)
-            self.plateauJoueur.extend(nouvelles_lettres)
-            print(f"Lettre rendue : {lettre_rendue}. Nouvelles lettres : {' '.join(nouvelles_lettres)}")
-        else:
-            print("Vous n'avez pas de lettres à échanger.")
 
-    def verifier_victoire(self):
-        # Vérifier si le joueur a gagné
-        if not self.plateauJoueur:
-            print("Félicitations ! Vous avez placé toutes vos lettres et gagné la partie !")
+    def verifier_connexe(self, plateau):
+        """Vérifie si toutes les lettres posées sont connexes."""
+        def explorer_connexes(x, y, visite):
+            """Explore toutes les cases connexes contenant des lettres."""
+            if (x, y) in visite or plateau[x][y] == "":
+                return
+            visite.add((x, y))
+            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < len(plateau) and 0 <= ny < len(plateau[0]):
+                    explorer_connexes(nx, ny, visite)
+
+        # Trouver une première lettre sur le plateau
+        premiere_lettre = None
+        for i in range(len(plateau)):
+            for j in range(len(plateau[0])):
+                if plateau[i][j] != "":
+                    premiere_lettre = (i, j)
+                    break
+            if premiere_lettre:
+                break
+
+        if not premiere_lettre:  # Si le plateau est vide
             return True
-        return False
+
+        # Explorer toutes les lettres connectées à la première lettre trouvée
+        lettres_visitees = set()
+        explorer_connexes(premiere_lettre[0], premiere_lettre[1], lettres_visitees)
+
+        # Vérifier si toutes les lettres posées sont dans `lettres_visitees`
+        for i in range(len(plateau)):
+            for j in range(len(plateau[0])):
+                if plateau[i][j] != "" and (i, j) not in lettres_visitees:
+                    return False
+
+        return True

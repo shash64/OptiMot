@@ -1,28 +1,44 @@
+import uuid
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_socketio import SocketIO, emit
-from Jeu import Jeu
-from Jeu_OptiMot import Jeu_O
+from Jeu import JeuMotPlusLong, JeuOptiMot, JeuBananaSolitaire
 from Joueur import Joueur
 
 
 app = Flask(__name__)
 app.secret_key = 'projetGroupe2'
 socketio = SocketIO(app) 
-Partie = Jeu(9,2)
-PartieOpti = Jeu_O()
+
+
+"""------------------------------"""
+""" Lancement des parties """
+"""------------------------------"""
+Partie = JeuMotPlusLong(9,2)
+PartieOpti = JeuOptiMot()
+PartieBananaSolitaire = JeuBananaSolitaire()
+
+
+"""------------------------------"""
+""" Partie utilisateur et session """
+"""------------------------------"""
 joueurConnecté = []
 joueurConnectéOpti = []
-socketio = SocketIO(app)
+partiesBanana = {}
+
+
+"""------------------------------"""
+""" Variables globales """
+"""------------------------------"""
 nbProposition = 0
 i = 0
 debutPartie = False
 nbLettreATirer = 9
 
 
+
 """------------------------------"""
 """ Route pour la page d'accueil """
 """------------------------------"""
-
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -32,7 +48,6 @@ def home():
 """----------------------------------------"""
 """ Routes pour le jeu du Mot Le Plus Long """
 """----------------------------------------"""
-
 @app.route('/index')
 def index():
     session['user_id'] = ""
@@ -180,7 +195,6 @@ def relancer():
 """-------------------------------------------------"""
 """ Routes pour le jeu du Mot Le Plus Long en Local """
 """-------------------------------------------------"""
-
 @app.route('/inscriptionLocale', methods=['POST'])
 def inscriptionLocale():
     global nom, debutPartie
@@ -292,7 +306,6 @@ def relancerLocal():
 """------------------------------"""
 """ Routes pour le jeu Opti Mots """
 """------------------------------"""
-
 @app.route('/indexOpti')
 def indexOpti():
     session['user_id'] = ""
@@ -322,5 +335,95 @@ def inscriptionOpti():
     return render_template('indexOpti.html', joueurConnecté=" - ".join(joueurConnectéOpti))
 
 
+
+"""------------------------------------"""
+""" Route pour les modes de jeu Banana """
+"""------------------------------------"""
+@app.route('/indexBanana')
+def indexBanana():
+    return render_template('indexBanana.html')
+
+
+
+"""------------------------------------"""
+""" Route pour le jeu Banana Solitaire """
+"""------------------------------------"""
+@app.route('/indexBananaSolitaire')
+def indexBananaSolitaire():
+    return render_template('indexBananaSolitaire.html')
+
+@app.route('/initialiserBananaSolitaire', methods=['POST'])
+def initialiser():
+    # Générer un identifiant unique pour chaque utilisateur s'il n'existe pas
+    if 'user_id' not in session:
+        session['user_id'] = str(uuid.uuid4())
+
+    user_id = session['user_id']
+
+    # Initialiser une nouvelle partie pour cet utilisateur si elle n'existe pas déjà
+    if user_id not in partiesBanana:
+        partiesBanana[user_id] = JeuBananaSolitaire()
+        partiesBanana[user_id].initialiser_plateau_joueur()
+
+    partie = partiesBanana[user_id]
+    return jsonify({
+        'plateau': partie.plateauJeu,
+        'plateau_joueur': partie.plateauJoueur,
+        'regime': len(partie.regime)
+    })
+
+@app.route('/confirmerPlateau', methods=['POST'])
+def confirmer_plateau():
+    user_id = session.get('user_id')
+    if not user_id or user_id not in partiesBanana:
+        return jsonify({"message": "Partie non initialisée pour cet utilisateur.", "validite": False})
+
+    partie = partiesBanana[user_id]
+    data = request.get_json()
+    partie.plateauProposition = data
+
+    connexe = partie.verifier_connexe(data)
+    if connexe:
+        mots_extraits = partie.extraireMots(data)
+        validite, mots_invalides = partie.comparer_avec_dictionnaire(mots_extraits)
+        nouveauPlateau = partie.plateauJeu
+
+        if validite:
+            return jsonify({"message": "Tous les mots sont valides dans le dictionnaire, veuillez placer les autres lettres.", "validite": True, "plateau": nouveauPlateau})
+        else:
+            motsInvalidesStr = ", ".join(mots_invalides)
+            return jsonify({"message": f"Le(s) mot(s) {motsInvalidesStr} ne sont/n'est pas dans le dictionnaire.", "validite": False})
+    else:
+        return jsonify({"message": "Les lettres ajoutées ne sont pas connexes.", "validite": False})
+
+@app.route('/piocherCarte', methods=['POST'])
+def piocherCarte():
+    user_id = session.get('user_id')
+    if not user_id or user_id not in partiesBanana:
+        return jsonify({"message": "Partie non initialisée pour cet utilisateur."})
+
+    partie = partiesBanana[user_id]
+    lettrePioche = partie.piocher_lettres(1)
+    partie.plateauJoueur += lettrePioche
+
+    return jsonify({'lettrePioche': lettrePioche})
+
+@app.route('/rejouerBananaSolitaire', methods=['POST'])
+def rejouer():
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({"message": "Aucun utilisateur en session."})
+
+    # Réinitialiser la partie pour l'utilisateur
+    partiesBanana[user_id] = JeuBananaSolitaire()
+    partiesBanana[user_id].initialiser_plateau_joueur()
+    partie = partiesBanana[user_id]
+
+    return jsonify({
+        'plateau': partie.plateauJeu,
+        'plateau_joueur': partie.plateauJoueur,
+        'regime': len(partie.regime)
+    })
+
 if __name__ == '__main__':
-   socketio.run(app, host="0.0.0.0", port=8888, debug=True)
+    socketio.run(app, host="0.0.0.0", port=8888, debug=True)
