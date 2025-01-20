@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accueil</title>
+    <title>Connexion</title>
     <style>
         body {
             background-color: #f4f4f9;
@@ -15,7 +15,6 @@
             justify-content: center;
             height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #2c3e50;
         }
 
         h1 {
@@ -23,13 +22,6 @@
             text-align: center;
             font-size: 2.5rem;
             margin-bottom: 15px;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            color: #555;
-            text-align: center;
-            margin-bottom: 30px;
         }
 
         form {
@@ -47,7 +39,6 @@
             font-size: 1rem;
             color: #555;
             margin-bottom: 10px;
-            text-align: center;
         }
 
         input {
@@ -75,24 +66,41 @@
         button:hover {
             background-color: #0056b3;
         }
+
+        .connected-players {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
-    <h1>Bienvenue dans Le Mot Le Plus Long</h1>
-    <h2>{{ joueurConnecté }}</h2>
-    <h1>{{ message }}</h1>
-    <form action="/inscription" method="POST">
+    <div class="connected-players">
+        Joueurs connectés :
+        <ul>
+            {% for joueur in joueurConnecte %}
+                <li>{{ joueur }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <h1>Connectez-vous</h1>
+    <form id="loginForm" action="/" method="POST">
         <label>Entrez votre nom de joueur</label>
         <input type="text" id="nomJoueur" name="nomJoueur" required>
-        <button type="submit">Démarrer</button>
+        <button type="submit">Se connecter</button>
     </form>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <script>
-        const socket = io();
-
-        // Écoute l'événement 'game_started' et redirige vers la page de jeu
-        socket.on('start_game', () => {
-            window.location.href = '/demarrer';  // Redirection vers la page de jeu
+        document.getElementById("loginForm").addEventListener("submit", function (event) {
+            // Empêcher l'envoi immédiat du formulaire
+            event.preventDefault();
+            // Récupérer le nom du joueur depuis le champ de saisie
+            const nomJoueur = document.getElementById("nomJoueur").value.trim()
+            // Stocker l'ID unique dans le Local Storage
+            localStorage.setItem("userId", nomJoueur);
+            // Soumettre le formulaire après avoir stocké l'ID
+            event.target.submit();
         });
     </script>
 </body>

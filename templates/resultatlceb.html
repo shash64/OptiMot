@@ -112,17 +112,12 @@
     <ul>
         {% for joueur in joueurs %}
             <li>
-                {{ joueur.nom }} a proposé : 
-                {% if joueur.proposition %}
-                    {{ joueur.proposition }}
-                {% else %}
-                    Mot incorrecte 
-                {% endif %}
+                {{ joueur.nom }} a proposé : {{ joueur.proposition }}
             </li>
         {% endfor %}
     </ul>
-    <h3>Le Mot Max </h3>
-    <p>Le mot max était <strong>{{ motMax }}</strong></p>
+    <h3>La réponse Optimale </h3>
+    <p>La réponse Optimale était <strong>{{ resultat }}</strong> grâce à l'expression <strong>{{ expression }}</strong>. La différence avec le nombre cible est de <strong>{{ erreur }}</strong>.</p>
     <h3>Le Score Total </h3>
     <ul>
         {% for joueur in joueurs %}
@@ -130,10 +125,10 @@
         {% endfor %}
     </ul>
     <div class="container">
-        <form action="/relancer/{{ partie_id }}" method="POST">
+        <form action="/relancerlceb/{{partie_id}}" method="POST">
             <button type="submit">Relancer</button>
         </form>
-        <form action="/quitter" method="POST">
+        <form action="/quitterlceb/{{partie_id}}" method="POST">
             <button type="submit">Quitter</button>
         </form>
         <p class="erreur">{{ erreur }}</p>
@@ -141,14 +136,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <script>
         const socket = io();
-        socket.on('quitter', (data) => {    
-            if (data.tabJoueurs.includes(localStorage.getItem("userId"))){
-                window.location.href = "/quitter"; // Redirection vers la page d'accueil
+        socket.on('quitterlceb', (data) => {
+            if (data.tabJoueurs.includes(localStorage.getItem("userId"))){    
+            window.location.href = '/home'; // Redirection vers la page d'accueil
             }
         });
-        socket.on('start_game', (data) => {
+        socket.on('start_game_lceb', (data) => {
             if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
-                window.location.href = `/demarrer/${data.partie_id}`;  // Redirection vers la page de jeu
+                window.location.href = `/demarrer_lceb/${data.partie_id}`;  // Redirection vers la page de jeu
             }
         });
     </script>

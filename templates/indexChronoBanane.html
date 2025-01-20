@@ -106,11 +106,11 @@
     </div>
     <div class="btn-container">
         <button class="btn" id="confirmButton">Confirmer le plateau</button>
-        <button class="btn" id="piocherButton">Piocher une lettre</button>
         <button class="btn" id="rejouerButton">Rejouer une partie</button>
-        <form action="/quitterBanana" method="POST">
-            <button class="btn" type="submit">Quitter la partie</button>
+        <form action="/quitterChronoBanane" method="POST">
+            <button type="submit" class="btn">Quitter la partie</button>
         </form>
+        
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -118,6 +118,7 @@
             const playerRack = document.getElementById('playerRack');
             const confirmButton = document.getElementById('confirmButton');
             const message = document.getElementById('message');
+            const partieID = {{ partie_id | tojson }};
             
             function createBoard(){
                 for (let i = 0; i < 15 * 15; i++) {
@@ -140,7 +141,7 @@
 
             }
 
-            fetch('/initialiserBananaSolitaire', {method: 'POST'})
+            fetch(`/initialiserChronoBanane/${partieID}`, {method: 'POST'})
             .then(response => response.json())
             .then(data => {
                 createTiles(data.plateau_joueur);
@@ -202,29 +203,19 @@
                     grid.push(row);
                 }
 
-                fetch('/confirmerPlateau', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(grid)})
+                fetch(`/confirmerPlateauChrono/${partieID}`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(grid)})
                 .then(response => response.json())
                 .then(data => {
                     message.textContent = data.message;
 
-                    if (data.validite===true) {
-                        //data.plateau.forEach((row, y) => {
-                            //row.forEach((letter, x) => {
-                                //const cell = board.children[y * 15 + x];
-                                //if (letter) {
-                                    //cell.textContent = letter;
-                                //}
-                            //});
-                        //});
-                        if (playerRack.children.length == 0) {
-                            document.getElementById('piocherButton').disabled = true;
+                    if (data.validite===true && playerRack.children.length == 0) {
                             document.getElementById('confirmButton').disabled = true;
                             document.getElementById('rejouerButton').disabled = false;
 
-                            message.textContent = "Fin de la partie ! Vous avez utilisé toutes vos lettres.";
+                        message.textContent = "Fin de la partie ! Vous avez Gagnés.";
                             
                             rejouerButton.addEventListener('click', () => {
-                                fetch('/rejouerBananaSolitaire', {
+                                fetch('/rejouerChronoBanane', {
                                     method: 'POST'
                                 })
                                 .then(response => response.json())
@@ -244,24 +235,6 @@
                                 });
                             }); 
                         }
-                    }
-                });
-            });
-
-            piocherButton.addEventListener('click', () => {
-                fetch('/piocherCarte', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const piochelettre = data.lettrePioche;
-                    piochelettre.forEach(lettre => {
-                        const tile = document.createElement('div');
-                        tile.className = 'tile';
-                        tile.textContent = lettre;
-                        tile.draggable = true;
-                        playerRack.appendChild(tile);
-                    });
                 });
             });
         });

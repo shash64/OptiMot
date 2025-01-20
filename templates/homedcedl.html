@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil</title>
+    <style>
+        body {
+            background-color: #f9fafc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .games-container {
+            display: flex;
+            gap: 50px;
+            justify-content: center;
+        }
+
+        .game {
+            text-align: center;
+        }
+
+        .game img {
+            width: 200px;
+            height: 200px;
+            border-radius: 15px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .game img:hover {
+            transform: scale(1.1);
+            box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .game-title {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .connected-players {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="connected-players">
+        Joueurs connectés :
+        <ul>
+            {% for joueur in joueurConnecte %}
+                <li>{{ joueur }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <h1>Bienvenue sur la plateforme de jeux</h1>
+    <div class="games-container">
+        <div class="game">
+            <a href="#" id="desChiffresEtDesLettres">
+                <img src="static/images/dcedl.jpg" alt="Des Chiffres et des Lettres">
+            </a>
+            <div class="game-title">Jouer à la verion originale</div>
+            <p id="statusDesChiffresEtDesLettres">Statut : En attente de joueurs...</p>
+        </div>
+        <div class="game">
+            <a href="#" id="motLePlusLong">
+                <img src="static/images/lemotlepluslong.png" alt="Le Mot Le Plus Long">
+            </a>
+            <div class="game-title">Le Mot Le Plus Long</div>
+            <p id="statusMotPlusLong">Statut : En attente de joueurs...</p>
+        </div>
+        <div class="game">
+            <a href="##" id="LeCompteEstBon">
+                <img src="static/images/LeCompteEstBon.jpg" alt="Le Compte Est Bon">
+            </a>
+            <div class="game-title">Le Compte Est Bon</div>
+            <p id="statusLeCompteEstBon">Statut : En attente de joueurs...</p>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <script>
+        const socket = io();
+        // sockets pour des chiffres et des lettres
+        document.getElementById('desChiffresEtDesLettres').addEventListener('click', () => {
+            socket.emit('join_gameDesChiffresEtDesLettres');
+        });
+
+        socket.on('update_statusDesChiffresEtDesLettres', (data) => {
+            document.getElementById('statusDesChiffresEtDesLettres').innerText = `Statut : ${data.statusDesChiffresEtDesLettres}`;
+        });
+
+        socket.on('start_gameDesChiffresEtDesLettres', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))) {
+                window.location.href = `/demarrer/${data.partie_id}`;
+            }
+        });
+
+
+        // sockets pour Le Mot Le Plus Long
+        document.getElementById('motLePlusLong').addEventListener('click', () => {
+            socket.emit('join_gameMotPlusLong');
+        });
+
+        socket.on('update_statusMotPlusLong', (data) => {
+            document.getElementById('statusMotPlusLong').innerText = `Statut : ${data.statusMotPlusLong}`;
+        });
+
+        socket.on('start_gameMotPlusLong', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))) {
+                window.location.href = `/demarrer/${data.partie_id}`;
+            }
+        });
+
+        //sockets pour Le Compte Est Bon
+        document.getElementById('LeCompteEstBon').addEventListener('click', () => {
+            socket.emit('join_gameLeCompteEstBon');
+        });
+
+        socket.on('update_statusLeCompteEstBon', (data) => {
+            document.getElementById('statusLeCompteEstBon').innerText = `Statut : ${data.statusLeCompteEstBon}`;
+        });
+
+        socket.on('start_gameLeCompteEstBon', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))) {
+                window.location.href = `/demarrer_lceb/${data.partie_id}`;
+            }
+        });
+
+    </script>
+</body>
+</html>

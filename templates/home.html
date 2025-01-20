@@ -52,22 +52,38 @@
             font-weight: bold;
             color: #2c3e50;
         }
+
+        .connected-players {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
+    <div class="connected-players">
+        Joueurs connectés :
+        <ul>
+            {% for joueur in joueurConnecte %}
+                <li>{{ joueur }}</li>
+            {% endfor %}
+        </ul>
+    </div>
     <h1>Bienvenue sur la plateforme de jeux</h1>
     <div class="games-container">
         <div class="game">
-            <a href="/indexOpti">
+            <a href="/demarrerOpti">
                 <img src="static/images/optimots.jpg" alt="Opti'Mots">
             </a>
             <div class="game-title">Opti'Mots</div>
         </div>
         <div class="game">
-            <a href="/index">
-                <img src="static/images/lemotlepluslong.png" alt="Le Mot Le Plus Long">
+            <a href="/homedcedl">
+                <img src="static/images/DesChiffresEtDesLettres.jpg" alt="Des chiffres et des lettres">
             </a>
-            <div class="game-title">Le Mot Le Plus Long</div>
+            <div class="game-title">Des Chiffres Et Des Lettres</div>
         </div>
         <div class="game">
             <a href="/indexBanana">

@@ -116,14 +116,25 @@
     </div>
     
     <h3>{{ nbLettre }}</h3>
-    <form action="/tirer" method="POST">
+    <form action="/tirer/{{ partie_id }}" method="POST">
         <div id="lettresATirer" class="{{ 'hidden' if cacher_div else '' }}">
             <button type="submit" name="typeLettre" value="c">Consonne</button>
             <button type="submit" name="typeLettre" value="v">Voyelle</button>
-            <h3>{{ affichageLettres }}</h3>
         </div>
     </form>
-    
+
+
+    <form action="/indice/{{ partie_id }}" method="POST">
+        <div id="indices" class="{{ 'hidden' if not cacher_div else '' }}">
+            <button type="submit" {% if i==4 %}disabled{% endif %}>Afficher un indice</button>
+            <ul>
+                {% for index in range(i) %}
+                    <li>{{ affichageIndices[index+1] }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </form>
+
 
     <div class="lettres-container" id="lettres">
         {% for lettre in lettres %}
@@ -134,7 +145,7 @@
     <div class="board-container" id="board"></div>
 
     <div class="form-container"> 
-        <form action="/proposer" method="POST" id="proposition">
+        <form action="/proposer/{{ partie_id }}" method="POST" id="proposition">
             <input type="hidden" name="tabLettres" id="lettres-proposees">
             <br><button type="submit" {% if disable %}disabled{% endif %}>Proposer</button><br>
         </form>
@@ -197,19 +208,32 @@
         });
 
         socket.on('update_letters', (data) => {
-            console.log("test");
-            window.location.href = '/affichageLettre';  // Redirection vers la page de jeu
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
+                window.location.href = `/affichageLettre/${data.partie_id}`;  // Redirection vers la page de jeu
+            }
+            
         });
 
 
-        socket.on('end_game', () => {
-            console.log("test");
-            window.location.href = '/affichageterminer';  // Redirection vers la page de jeu
+        socket.on('end_game', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
+                window.location.href = `/affichageterminer/${data.partie_id}`;  // Redirection vers la page de jeu
+            }
         });
 
-        socket.on('chrono', () => {
-            startChrono();
+        socket.on('allerMancheLCEB', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
+                window.location.href = `/demarrer_lceb/${data.partie_id}`;  // Redirection vers la page de jeu
+            }
         });
+        
+        socket.on('afficherResultatDCEDL', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
+                window.location.href = `/afficherResultatDCEDL/${data.partie_id}`;  // Redirection vers la page de jeu
+            }
+        });
+        
+
 
         let timeRemaining = 30;
         const chronoElement = document.getElementById("chrono");
@@ -224,7 +248,7 @@
 
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = '/proposer';
+                    form.action = '/proposer/{{ partie_id }}';
 
                     const input = document.createElement('input');
                     input.type = 'hidden';

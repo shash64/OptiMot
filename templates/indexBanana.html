@@ -52,9 +52,24 @@
             font-weight: bold;
             color: #2c3e50;
         }
+        .connected-players {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
+    <div class="connected-players">
+        Joueurs connectés :
+        <ul>
+            {% for joueur in joueurConnecte %}
+                <li>{{ joueur }}</li>
+            {% endfor %}
+        </ul>
+    </div>
     <h1>Choisissez un mode de jeu:</h1>
     <div class="games-container">
         <div class="game">
@@ -64,17 +79,54 @@
             <div class="game-title">Banana Solitaire</div>
         </div>
         <div class="game">
-            <a href="/indexBananaChrono">
+            <a href="#" id="chronoBanane">
                 <img src="static/images/bananachrono.jpeg" alt="Banana Chrono">
             </a>
             <div class="game-title">Banana Chrono</div>
+            <p id="statusChronoBanane">Statut : En attente de joueurs...</p>
         </div>
         <div class="game">
-            <a href="/indexBananaCafe">
+            <a href="#" id="bananeCafe">
                 <img src="static/images/bananacafe.jpeg" alt="Banana Café">
             </a>
             <div class="game-title">Banana Café</div>
+            <p id="statusBananeCafe">Statut : En attente de joueurs...</p>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <script>
+        const socket = io();
+        // sockets pour Chrono Banane
+        document.getElementById('chronoBanane').addEventListener('click', () => {
+            socket.emit('join_gameChronoBanane');
+        });
+
+        socket.on('update_statusChronoBanane', (data) => {
+            document.getElementById('statusChronoBanane').innerText = `Statut : ${data.statusChronoBanane}`;
+        });
+
+        socket.on('start_gameChronoBanane', (data) => {
+            console.log("1")
+            if (data.partie_id) {
+                console.log("2")
+                window.location.href = `/PartieChronoBanane/${data.partie_id}`;
+            }
+        });
+
+        // sockets pour Banane Cafe
+        document.getElementById('bananeCafe').addEventListener('click', () => {
+            socket.emit('join_gameBananeCafe');
+        });
+
+        socket.on('update_statusBananeCafe', (data) => {
+            document.getElementById('statusBananeCafe').innerText = `Statut : ${data.statusBananeCafe}`;
+        });
+
+        socket.on('start_gameBananeCafe', (data) => {
+            if (data.partie_id) {
+                window.location.href = `/PartieBananeCafe/${data.partie_id}`;
+            }
+        });
+    </script>
 </body>
 </html>

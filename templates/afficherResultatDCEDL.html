@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultat</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2c3e50;
+        }
+
+        h1, h3 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            margin-top: 10px;
+            color: #555;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 20px 0;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        li {
+            margin: 10px 0;
+            padding: 15px 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            font-size: 1.1rem;
+            color: #555;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        li strong {
+            font-weight: bold;
+            color: #333;
+        }
+
+        p {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #666;
+            margin: 15px 0;
+        }
+
+        form {
+            margin: 0;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .erreur {
+            color: #e74c3c;
+            font-size: 1rem;
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Résultat de la manche numéro {{numManche}}</h1>
+    <h3>Propositions </h3>
+    <h3>Le Score Total </h3>
+    <ul>
+        {% for joueur in joueurs %}
+            <li>{{ joueur.nom }} : {{ joueur.nbPoints }} points</li>
+        {% endfor %}
+    </ul>
+    <div class="container">
+        <form action="/relancer/{{ partie_id }}" method="POST">
+            <button type="submit" {% if numManche==6 %}disabled{% endif %}>Manche suivante</button>
+        </form>
+        {% if numManche==6 %}
+        <form action="/quitter" method="POST">
+            <button type="submit">Quitter</button>
+        </form>
+        {% endif %}
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <script>
+        const socket = io();
+        socket.on('start_game', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
+                window.location.href = `/demarrer/${data.partie_id}`;  // Redirection vers la page de jeu
+            }
+        });
+    </script>
+</body>
+</html>

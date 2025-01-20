@@ -106,9 +106,8 @@
     </div>
     <div class="btn-container">
         <button class="btn" id="confirmButton">Confirmer le plateau</button>
-        <button class="btn" id="piocherButton">Piocher une lettre</button>
         <button class="btn" id="rejouerButton">Rejouer une partie</button>
-        <form action="/quitterBanana" method="POST">
+        <form action="/quitterCafeBanane" method="POST">
             <button class="btn" type="submit">Quitter la partie</button>
         </form>
     </div>
@@ -118,6 +117,7 @@
             const playerRack = document.getElementById('playerRack');
             const confirmButton = document.getElementById('confirmButton');
             const message = document.getElementById('message');
+            const partieID = {{ partie_id | tojson }};
             
             function createBoard(){
                 for (let i = 0; i < 15 * 15; i++) {
@@ -128,8 +128,7 @@
             }
             createBoard();
 
-            function createTiles(rack){
-                const letters = rack;
+            function createTiles(letters){
                 letters.forEach(letter => {
                     const tile = document.createElement('div');
                     tile.className = 'tile';
@@ -137,14 +136,46 @@
                     tile.draggable = true;
                     playerRack.appendChild(tile);
                 });
-
             }
 
-            fetch('/initialiserBananaSolitaire', {method: 'POST'})
+            fetch(`/initialiserBananeCafe/${partieID}`, {method: 'POST'})
             .then(response => response.json())
             .then(data => {
                 createTiles(data.plateau_joueur);
             });
+
+            // Écouter les clics sur les tuiles pour effectuer un échange
+            playerRack.addEventListener('click', (event) => {
+                // Vérifier si l'élément cliqué est une tuile
+                if (event.target.classList.contains('tile')) {
+                    const selectedLetter = event.target.textContent;
+                    // Envoyer une requête POST pour échanger la tuile
+                    fetch(`/echangerTuiles/${partieID}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(selectedLetter)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success === true) {
+    
+                            event.target.remove()
+                            createTiles(data.nouvelles_lettres); // Ajouter les nouvelles lettres
+
+                            // Afficher un message de succès
+                            message.textContent = `Vous avez échangé "${selectedLetter}" contre ${data.nouvelles_lettres.length} nouvelles lettres.`;
+                        } else {
+                            // Afficher un message d'erreur
+                            message.textContent = data.message || "Impossible d'échanger cette tuile.";
+                        }
+                    })
+                    .catch(() => {
+                        // En cas d'erreur
+                        message.textContent = "Erreur lors de l'échange de la tuile.";
+                    });
+                }
+            });
+
 
             let draggedTile = null;
 
@@ -202,7 +233,7 @@
                     grid.push(row);
                 }
 
-                fetch('/confirmerPlateau', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(grid)})
+                fetch(`/confirmerPlateauCafe/${partieID}`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(grid)})
                 .then(response => response.json())
                 .then(data => {
                     message.textContent = data.message;
@@ -217,14 +248,13 @@
                             //});
                         //});
                         if (playerRack.children.length == 0) {
-                            document.getElementById('piocherButton').disabled = true;
                             document.getElementById('confirmButton').disabled = true;
                             document.getElementById('rejouerButton').disabled = false;
 
                             message.textContent = "Fin de la partie ! Vous avez utilisé toutes vos lettres.";
                             
                             rejouerButton.addEventListener('click', () => {
-                                fetch('/rejouerBananaSolitaire', {
+                                fetch('/rejouerCafeBanane', {
                                     method: 'POST'
                                 })
                                 .then(response => response.json())
@@ -234,8 +264,6 @@
 
                                         createBoard()
                                         createTiles(data.plateau_joueur);
-
-                                        document.getElementById('piocherButton').disabled = false;
                                         document.getElementById('confirmButton').disabled = false;
                                         document.getElementById('rejouerButton').disabled = true;
 
@@ -248,22 +276,22 @@
                 });
             });
 
-            piocherButton.addEventListener('click', () => {
-                fetch('/piocherCarte', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const piochelettre = data.lettrePioche;
-                    piochelettre.forEach(lettre => {
-                        const tile = document.createElement('div');
-                        tile.className = 'tile';
-                        tile.textContent = lettre;
-                        tile.draggable = true;
-                        playerRack.appendChild(tile);
-                    });
-                });
-            });
+            //piocherButton.addEventListener('click', () => {
+                //fetch('/piocherCarte', {
+                    //method: 'POST'
+                //})
+                //.then(response => response.json())
+                //.then(data => {
+                    //const piochelettre = data.lettrePioche;
+                    //piochelettre.forEach(lettre => {
+                        //const tile = document.createElement('div');
+                        //tile.className = 'tile';
+                        //tile.textContent = lettre;
+                        //tile.draggable = true;
+                        //playerRack.appendChild(tile);
+                    //});
+                //});
+            //});
         });
     </script>
 </body>

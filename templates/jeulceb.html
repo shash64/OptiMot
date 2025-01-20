@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le Compte est Bon</title>
+    <style>
+        body {
+            background-color: #f9fafc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #4182c9;
+            transform: translateY(-2px);
+            box-shadow: 0px 6px 10px rgba(0, 123, 255, 0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            text-align: center;
+        }
+        .numbers, .operations {
+            margin: 20px 0;
+        }
+        .numbers button, .operations button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .numbers button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #expression {
+            font-size: 20px;
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            min-height: 50px;
+        }
+        .undo, .submit {
+            padding: 10px 20px;
+            font-size: 18px;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .operation {
+            background-color: #244c74;
+        }
+        .undo {
+            background-color: #f44336;
+        }
+        .submit {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Le Compte est Bon</h1>
+        <h2>Bienvenue {{joueur}}</h2>
+        <p id="target"></p>
+        <h3>{{message}}</h3>
+        <div class="numbers">
+            <!-- Les boutons des nombres seront ajoutés ici dynamiquement -->
+        </div>
+        <div class="operations">
+            <button class="operation" onclick="addOperation('+')">+</button>
+            <button class="operation" onclick="addOperation('-')">-</button>
+            <button class="operation" onclick="addOperation('*')">*</button>
+            <button class="operation" onclick="addOperation('/')">/</button>
+            <button class="operation" onclick="addParenthesis('(')">(</button>
+            <button class="operation" onclick="addParenthesis(')')">)</button>
+        </div>
+        <div id="expression" contenteditable="false"></div>
+        <button class="undo" onclick="undoLast()">Retour</button>
+        <form action="/submit/{{partie_id}}" method="POST" id="proposition">
+            <input type="hidden" name="tabnb" id="nb_proposé">
+            <br><button class ="submit" type="submit" {% if disable %}disabled{% endif %}>Proposer</button><br>
+        </form>
+        <p id="result"></p>
+    </div>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <script>
+        const socket = io();
+        socket.on('allerMancheMLPL', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
+                window.location.href = `/demarrer/${data.partie_id}`; 
+            }
+        });
+        socket.on('end_game_lceb', (data) => {
+            if (data.partie_id && data.tabJoueurs.includes(localStorage.getItem("userId"))){
+                window.location.href = `/affichageterminerlceb/${data.partie_id}`; 
+            }
+        });
+    </script>
+    <script>
+        const numbers = {{ numbers | tojson }};
+        const targetNumber = {{ target_number }};
+        const proposeForm = document.getElementById('proposition');
+        let expressionStack = []; // Stack pour suivre chaque élément ajouté à l'expression
+        const usedNumbers = new Set();
+
+
+        proposeForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // Empêche le comportement par défaut du formulaire
+            const expression = expressionStack.map(item => item.value).join(' '); // Créer l'expression
+            document.getElementById('nb_proposé').value = expression; // Assigne l'expression au champ caché
+            proposeForm.submit(); // Soumet le formulaire
+        });
+
+        // Initialisation
+        document.getElementById("target").textContent = `Chiffre cible : ${targetNumber}`;
+
+        // Génération des boutons de nombres
+        const numbersContainer = document.querySelector(".numbers");
+        // Génération des boutons de nombres
+        numbers.forEach((num, index) => {
+            const button = document.createElement("button");
+            button.textContent = num;
+            button.dataset.index = index; // Attribut unique basé sur l'indice
+            button.onclick = () => addNumber(num, button);
+            numbersContainer.appendChild(button);
+        });
+
+
+        function addNumber(value, button) {
+            if (expressionStack.length > 0 && expressionStack[expressionStack.length - 1].type === 'number') {
+                alert("Vous devez ajouter un opérateur avant de choisir un autre chiffre.");
+                return;
+            }
+
+            const buttonId = button.dataset.index; // Identifiant unique
+            if (!usedNumbers.has(buttonId)) {
+                expressionStack.push({ type: 'number', value, button });
+                usedNumbers.add(buttonId); // Ajout de l'identifiant unique au set
+                button.disabled = true; // Désactiver uniquement ce bouton
+                updateExpressionDisplay();
+            }
+        }
+
+
+
+        function addOperation(op) {
+            if (expressionStack.length === 0 || expressionStack[expressionStack.length - 1].type === 'operation') {
+                alert("Vous devez ajouter un chiffre avant d'ajouter un opérateur.");
+                return;
+            }
+
+            expressionStack.push({ type: 'operation', value: op });
+            updateExpressionDisplay();
+        }
+
+
+        function addParenthesis(parenthesis) {
+            expressionStack.push({ type: 'parenthesis', value: parenthesis });
+            updateExpressionDisplay();
+        }
+
+        function updateExpressionDisplay() {
+            const expression = expressionStack.map(item => item.value).join(' ');
+            document.getElementById("expression").textContent = expression;
+        }
+
+        function undoLast() {
+            if (expressionStack.length > 0) {
+                const lastItem = expressionStack.pop();
+
+                if (lastItem.type === 'number') {
+                    const buttonId = lastItem.button.dataset.index;
+                    usedNumbers.delete(buttonId); // Supprimer l'identifiant unique du set
+                    lastItem.button.disabled = false;
+                }
+                updateExpressionDisplay();
+            }
+        }
+
+    </script>
+</body>
+</html>
