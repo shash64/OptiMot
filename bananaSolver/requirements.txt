@@ -1,0 +1,4 @@
+Pas de pré-requis, vous n'avez qu'à mettre la suite de lettres dans la fonction et boom.
+
+NB: si vous voulez changer la taille de la grille, c'est la première ligne de la fonction du bananaSolver, 
+je ne l'ai pas mise en paramètre car y'a que la suite des lettres dans le sujet.
