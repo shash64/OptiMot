@@ -8,6 +8,9 @@ class Joueur: #Classe Joueur permettant de referencer un joueur par des attribut
         self.nbPoints = 0 #nombre de points du joueur
         self.proposition = "" #mot proposé par le joueur pour mot long
         self.main = [] #main du joueur pour optiMot
+        self.nombreIndice = 0
+        self.plateauJoueur=[]
+        self.plateauJeu=[[]]
 
     def addnbPoints(self, nbPoints): #fonction pour ajouter des points au score total du joueur
         self.nbPoints += nbPoints

@@ -1,8 +1,13 @@
 #import classe Joueur et bibbliotheque pour l'aléatoire.
+import random
 from random import randint
 from Joueur import Joueur
 from random import shuffle
-import random
+import requests
+from bs4 import BeautifulSoup
+from spellchecker import SpellChecker
+from itertools import combinations
+import operator
 
 class JeuMotPlusLong: #Classe jeu pour gérer tous les élements lié a une partie
     def __init__(self,nbLettres,nbJoueurs): #Constructeur paramétré pour creer une partie en fonction du nombre de lettres et de joueurs
@@ -12,6 +17,10 @@ class JeuMotPlusLong: #Classe jeu pour gérer tous les élements lié a une part
         self.tabMots=[] #attribut : tableau stockant les lettres tirées par les joueurs
         self.nbLettres = nbLettres #attribut : le nombre de letttre pour le mot de cette partie
         self.nbJoueurs = nbJoueurs  #attribut : le nombre de joueurs participant à cette partie
+        self.infoMotLePlusLong=[] #attribut : stocker le mot le plus long, son nombre de lettre, sa nature, sa definition
+        self.nbProp=0
+        self.nbLettresATirer = 9
+        self.nbManches = 0
 
     #Fonction qui crée et ajoute un objet Joueur à tabJoueurs en fonction d'un nom
     def ajoutJoueur(self,nom):  
@@ -100,7 +109,6 @@ class JeuMotPlusLong: #Classe jeu pour gérer tous les élements lié a une part
             #print("Le joueur "+NomJoueurDuMotPlusLong+" à marqué "+str(len(MotPlusLong))+" points avec le mot "+MotPlusLong)#on fait l'affichage du joueur ayant le mot le plus long avec le mot tout en affichant les points qu'il a marqué
         
 
-    
     #Fonction qui calcule quel mot était le plus long possible en fonction des lettres
     def motMax(self):
         motMax=""    #Initialisation du motMax 
@@ -124,9 +132,150 @@ class JeuMotPlusLong: #Classe jeu pour gérer tous les élements lié a une part
                     #On regarde si notre mot testé devient le nouveau mot le plus possible
                     if len(motMax)<len(mot) and len(mot)<=9:
                             motMax=mot       
-        #On affiche quel mot était le plus long
-        print("Le mot le plus long était : "+motMax)
+        self.infoMotLePlusLong.append(motMax[:-1]) #-1 pour enlever le \n
+        motcorrige=corriger_mot_local(motMax[:-1])
+        self.infoMotLePlusLong.append(str(len(motMax)-1))
+        self.infoMotLePlusLong.append(obtenir_nature_grammaticale_wiki(motcorrige))
+        self.infoMotLePlusLong.append(motMax[0])
+        self.infoMotLePlusLong.append(obtenir_premiere_definition_wiktionary(motcorrige))
         return motMax
+
+
+class JeuLeCompteEstBon:
+    def __init__(self,nbJoueurs):
+        self.nbATrouver = 0
+        self.nbPossible = [1,2,3,4,5,6,7,8,9]*2+[25,50,75,100]
+        self.nbDeLaPartie = []
+        self.tabJoueurs = []
+        self.nbJoueurs = nbJoueurs
+        self.infoMotOpti = ()
+        self.nbProp = 0
+        self.nbManches = 0
+
+    #Fonction qui crée et ajoute un objet Joueur à tabJoueurs en fonction d'un nom
+    def ajoutJoueur(self,nom):  
+        self.tabJoueurs.append(Joueur(nom))
+
+    def calculer_nb_a_trouver(self):
+        self.nbATrouver=random.randint(101, 999)
+
+    def tirer_nb_partie(self):
+        copieNbPossible = self.nbPossible[:]
+        for i in range(6):
+            indice = random.randint(0, len(copieNbPossible)-1)
+            self.nbDeLaPartie.append(copieNbPossible.pop(indice))
+
+
+    def proposition(self, joueur, premiere_proposition):
+        resultat = evaluer_expression(premiere_proposition)
+        if resultat is not None:
+            joueur.proposition=int(resultat)
+            return True
+        else:
+            joueur.proposition =0
+            return False
+
+
+    def le_compte_est_bon(self):
+        """
+        Trouve la solution optimale pour approcher un nombre cible
+        en utilisant les entiers donnés et les opérations élémentaires (+, -, *, /).
+        :param entiers: list, tableau d'entiers disponibles
+        :param cible: int, valeur cible
+        :return: tuple (int, str), le résultat le plus proche et l'expression correspondante
+        """
+        operations = ['+', '-', '*', '/']
+        meilleure_diff = float('inf')
+        meilleure_solution = None
+        entiers = self.nbDeLaPartie
+        cible = self.nbATrouver
+
+        # Dictionnaire de mémoïsation pour stocker les résultats déjà calculés
+        memo = {}
+
+        def calcul_recursif(nums, expressions):
+            nonlocal meilleure_diff, meilleure_solution
+
+            # Vérifier si cette combinaison de nums a déjà été évaluée
+            nums_tuple = tuple(sorted(nums))
+            if nums_tuple in memo:
+                return
+
+            # Si on n'a plus qu'un seul nombre, on évalue la solution actuelle
+            if len(nums) == 1:
+                resultat = nums[0]
+                diff = abs(cible - resultat)
+                if diff < meilleure_diff:
+                    meilleure_diff = diff
+                    meilleure_solution = (resultat, expressions[0],diff)
+                memo[nums_tuple] = True  # Mémoriser l'état pour ne pas refaire le même calcul
+                return
+
+            # Essaye toutes les paires de nombres et toutes les opérations possibles
+            for i in range(len(nums)):
+                for j in range(len(nums)):
+                    if i != j:
+                        for op in operations:
+                            a, b = nums[i], nums[j]
+
+                            # Crée une nouvelle liste de nombres sans les deux opérandes utilisés
+                            reste = [nums[k] for k in range(len(nums)) if k != i and k != j]
+                            reste_expr = [expressions[k] for k in range(len(expressions)) if k != i and k != j]
+
+                            # Effectuer l'opération et continuer récursivement
+                            try:
+                                if op == '+':
+                                    new_value = a + b
+                                elif op == '-':
+                                    new_value = a - b
+                                elif op == '*':
+                                    new_value = a * b
+                                elif op == '/' and b != 0 and a % b == 0:
+                                    new_value = a / b
+                                else:
+                                    continue  # Ignore les cas non valides
+
+                                # Nouvelle expression
+                                new_expr = f"({expressions[i]} {op} {expressions[j]})"
+
+                                # Appel récursif
+                                calcul_recursif(reste + [new_value], reste_expr + [new_expr])
+
+                            except ZeroDivisionError:
+                                continue
+
+            # Mémoriser que cette combinaison a été explorée
+            memo[nums_tuple] = True
+
+        # Initialise les expressions avec les nombres donnés
+        expressions = [str(n) for n in entiers]
+        calcul_recursif(entiers, expressions)
+
+        return meilleure_solution
+
+    def ajout_info_optimales(self):
+        self.infoMotOpti = self.le_compte_est_bon()
+
+    def comparaison_proposition(self):
+        meilleurDifférence = abs(self.nbATrouver-self.tabJoueurs[0].proposition)
+        nbpoints = 7
+        for joueur in self.tabJoueurs:
+            if abs(joueur.proposition-self.nbATrouver)<meilleurDifférence:
+                meilleurDifférence=abs(joueur.proposition-self.nbATrouver)
+        if meilleurDifférence==self.infoMotOpti[2]:
+            nbpoints=10
+        for joueur in self.tabJoueurs:
+            if abs(joueur.proposition-self.nbATrouver)==meilleurDifférence:
+                joueur.nbPoints+=nbpoints
+
+
+def evaluer_expression(expression):
+    try:
+        return eval(expression)
+    except Exception as e:
+        return None
+
+
 
 class JeuOptiMot:
     def __init__(self):
@@ -241,14 +390,18 @@ class JeuOptiMot:
 
 
 
-class JeuBananaSolitaire:
+class JeuBanana:
     def __init__(self):
         self.regime = (["A"] * 14 + ["B"] * 3 + ["C"] * 4 + ["D"] * 4 + ["E"] * 21 + ["F"] * 3 + ["G"] * 2 + ["H"] * 2 + ["I"] * 12 + ["J"] * 1 + ["K"] * 1 + ["L"] * 7 + ["M"] * 4 + ["N"] * 9 + ["O"] * 9 + ["P"] * 3 + ["Q"] * 1 + ["R"] * 9 + ["S"] * 9 + ["T"] * 9 + ["U"] * 9 + ["V"] * 3 + ["W"] * 1 + ["X"] * 1 + ["Y"] * 1 + ["Z"] * 2)
         random.shuffle(self.regime)
-        self.plateauJoueur = []
+        self.plateauSolitaire = []
         self.plateauJeu = [[]] 
         self.plateauProposition = [[]]
+        self.tabJoueurs=[]
+        self.gagnant = None
 
+    def ajoutJoueur(self,nom):  
+        self.tabJoueurs.append(Joueur(nom))
 
     def piocher_lettres(self, nombre):
         lettres = []
@@ -258,19 +411,17 @@ class JeuBananaSolitaire:
         return lettres
 
 
-    def initialiser_plateau_joueur(self):
-        self.plateauJoueur = self.piocher_lettres(21)
+    def initialiser_plateau_solitaire(self):
+        self.plateauSolitaire = self.piocher_lettres(21)
 
-
-    def verifier_mot_dictionnaire(self, mot):
-        try:
-            with open("ODS9.txt", 'r', encoding='utf-8') as file:
-                words = file.readlines()
-        except FileNotFoundError:
-            raise Exception("Dictionnaire introuvable.")
-
-        words = [line.strip() for line in words]
-        return mot in words
+    def initialiser_plateau_cafe(self):
+        for joueur in self.tabJoueurs:  
+            joueur.plateauJoueur = self.piocher_lettres(21) 
+    
+    def initialiser_plateau_chrono(self):
+        plateauTirage=self.piocher_lettres(21) 
+        for joueur in self.tabJoueurs:  
+            joueur.plateauJoueur = plateauTirage
 
 
     def extraireMots(self, plateau):
@@ -381,3 +532,113 @@ class JeuBananaSolitaire:
                     return False
 
         return True
+
+    def echanger_tuile(self, joueur, lettre):
+        # Vérifie si la lettre est dans le plateau du joueur
+        if lettre not in joueur.plateauJoueur:
+            print(f"Erreur : la lettre '{lettre}' n'est pas présente dans le rack de {joueur.nom}.")
+            return None
+        # Vérifie si le sac contient au moins 3 lettres
+        if len(self.regime) < 3:
+            print("Erreur : il n'y a pas assez de lettres dans le sac pour échanger.")
+            return None
+        joueur.plateauJoueur.remove(lettre)
+        self.regime.append(lettre)
+        random.shuffle(self.regime)
+        nouvelles_lettres = self.piocher_lettres(3)
+        # Ajoute les nouvelles lettres au rack du joueur
+        joueur.plateauJoueur.extend(nouvelles_lettres)
+        return nouvelles_lettres
+
+
+
+def obtenir_premiere_definition_wiktionary(mot):
+    """
+    Fonction pour récupérer uniquement la première phrase de la définition d'un mot depuis Wiktionary,
+    avec des espaces corrigés.
+    :param mot: str, le mot à chercher
+    :return: str, la première phrase de la définition ou un message d'erreur
+    """
+    # URL de recherche sur le site Wiktionary
+    url = f"https://fr.wiktionary.org/wiki/{mot}"
+    
+    try:
+        # Envoyer une requête HTTP
+        response = requests.get(url)
+        response.raise_for_status()  # Vérifie si la requête a réussi
+        
+        # Analyser le contenu HTML de la page
+        soup = BeautifulSoup(response.text, "html.parser")
+        
+        # Rechercher la section contenant les définitions (premier <ol>)
+        def_section = soup.find("ol")
+        
+        if not def_section:
+            return "Aucune définition trouvée pour le mot."
+        
+        # Récupérer la première définition (<li>)
+        premiere_definition = def_section.find("li")
+        if not premiere_definition:
+            return "Aucune définition trouvée pour le mot."
+        
+        # Extraire le texte brut avec des espaces corrigés
+        definition_complète = premiere_definition.get_text(separator=" ", strip=True)
+        
+        # Séparer la définition en phrases (basé sur le point final)
+        premiere_phrase = definition_complète.split('.')[0] + '.'  # Récupère tout jusqu'au premier point
+        
+        return premiere_phrase.split(':')[0].split('du verbe')[0]
+    
+    except requests.exceptions.RequestException as e:
+        return f"Erreur lors de la connexion à Wiktionary : {e}"
+
+
+
+def obtenir_nature_grammaticale_wiki(mot):
+    """
+    Fonction pour récupérer la nature grammaticale d'un mot depuis le site Larousse.
+    :param mot: str, le mot à chercher
+    :return: str, la nature grammaticale ou un message d'erreur
+    """
+    # URL de recherche sur le site Larousse
+    url = f"https://fr.wiktionary.org/wiki/{mot}"
+    
+    try:
+        # Envoyer une requête HTTP
+        response = requests.get(url)
+        response.raise_for_status()
+        
+        # Analyser le contenu HTML de la page
+        soup = BeautifulSoup(response.text, "html.parser")
+        
+        # Trouver la section contenant la nature grammaticale (élément <p> avec la classe 'CatgramDefinition')
+        nature_section = soup.find("span", class_="titredef")
+        
+        if not nature_section:
+            return "Aucune nature trouvée pour le mot."
+    
+        # Extraire le texte restant (nature grammaticale)
+        nature = nature_section.get_text(strip=True)
+        
+        return nature
+    
+    except requests.exceptions.RequestException as e:
+        return f"Erreur lors de la connexion à Wiktionary : {e}"
+
+
+
+def corriger_mot_local(mot_majuscule):
+    """
+    Corrige un mot en majuscule avec une orthographe correcte (avec accents).
+    Utilise une bibliothèque locale pour la correction.
+    :param mot_majuscule: str - Le mot en majuscule (ex: "EPATANT")
+    :return: str - Le mot corrigé (ex: "épatant") ou None si non trouvé
+    """
+    spell = SpellChecker(language='fr')
+    mot_minuscule = mot_majuscule.lower()
+    
+    # Trouver le mot corrigé
+    correction = spell.correction(mot_minuscule)
+    return correction
+
+            

@@ -1,19 +1,34 @@
-# Le Mot Le Plus Long
+# Plateforme Multi-Jeux
 
-## Description
+## Description:
 
-Premier Jeu : "Le Mot Le Plus Long" est une implémentation web du jeu classique dans lequel les joueurs tentent de former le mot le plus long à partir d'un ensemble de lettres. Le projet est écrit en Python et utilise le framework Flask pour la gestion des interfaces web. Ce projet inclut également une version locale permettant de jouer depuis le terminal, connectée à des joueurs en ligne.
+Premier Jeu : "Des chiffres et des lettres" est un jeu télévisé populaire constitué de plusieures manches du :
 
-Deuxieme Jeu :"Opti'Mot" est un jeu de lettres interactif qui se joue en ligne et met les joueurs au défi de former des mots à partir de lettres disposées dans une colonne verticale .Le projet est écrit aussi en Python et utilise le framework Flask pour la gestion des interfaces web.
+   Premier Jeu : "Le Mot Le Plus Long" est une implémentation web du jeu classique dans lequel les joueurs tentent de former le mot le plus long à partir d'un ensemble de lettres. Le projet est écrit en Python et utilise le framework Flask pour la gestion des interfaces web. Ce projet inclut également une version locale permettant de jouer depuis le terminal, connectée à des joueurs en ligne.
+
+   Second Jeu : "Le compte est bon" est un jeu dans lequel les joueurs ont 6 chiffres ainsi que les opérations élémentaires telles que l'addition, la soustraction , la multiplication, et la division. Les joueurs doivent en utilisant au maximum une fois chaque nombre former grace à des opérations succecives, un nombre qui se rapproche le plus possible du nombre cible.
+
+
+
+Deuxieme Jeu :
+"Opti'Mot" est un jeu de lettres interactif qui se joue en ligne et met les joueurs au défi de former des mots à partir de lettres disposées dans une colonne verticale .Le projet est écrit aussi en Python et utilise le framework Flask pour la gestion des interfaces web.
 La communication en temps réel entre le serveur et les clients est gérée par Socket.IO, permettant aux joueurs d’interagir instantanément et de partager les mises à jour du jeu sans avoir à recharger la page. L'interface utilisateur est réalisée avec des pages HTML, CSS et JavaScript, offrant une expérience visuelle agréable et réactive. Le jeu utilise également un fichier de dictionnaire (ODS9.txt) pour valider les mots proposés par les joueurs. Grâce à cette architecture, OptiMot permet une expérience de jeu fluide et engageante.
 
-## Fonctionnalités
+Troisième Jeu :
+"BananaGrams" est également un jeu de lettres qui se joue sur plateau avec 144 tuiles. 3 modes de jeu possibles :
+- Banana Solitaire : À jouer seul. Vous recevez un tirage de 21 lettres et votre but est de former des mots horizontals et verticals connexes entre eux. Possibilité de piocher une lettre si vous êtes bloqués.
+
+- Chrono Banane : Se joue a plusieurs. Celui qui fini sa grille le premier gagne.
+
+- Banane Café : Se joue a plusieurs avec une grille commune. Le premier joueur qui arrive à poser toutes ses lettres gagne. L'échange de une tuile contre trois est possible.
+
+## Fonctionnalités:
 - **Gestion des joueurs :** Une classe `Joueur` permet de modéliser les joueurs et leurs paramètres.
-- **Mécanismes du jeu :** Toutes les fonctions liées à la logique du jeu sont regroupées dans le fichier `Jeu.py` et `Jeu_OptiMot.py`.
+- **Mécanismes du jeu :** Toutes les fonctions liées à la logique du jeu sont regroupées dans le fichier `Jeu.py` contenant les classes JeuMotPlusLong, JeuOptiMot, JeuBanana, JeuLeCompteEstBon.
 - **Version web :** Le fichier `serveur.py` gère les connexions, les routes Flask, et les templates HTML.
 - **Version locale :** Le fichier `Jeu_Local.py` permet à un joueur de participer au jeu depuis le terminal tout en jouant contre des joueurs connectés via l'interface web ou d'autres terminaux.
 
-## Structure du projet
+## Structure du projet:
 
 ```
 .
@@ -26,9 +41,14 @@ La communication en temps réel entre le serveur et les clients est gérée par 
 └── README.md       # Documentation du projet
 ```
 
-## Utilisation
+## Installations requises
 
-### Version Web
+## Utilisation:
+```bash
+pip install -r requirements.txt
+```
+
+### Version Web:
 1. Lancez le serveur:
    ```bash
    python serveur.py
@@ -38,7 +58,7 @@ La communication en temps réel entre le serveur et les clients est gérée par 
    Exemple: [http://192.168.1.43:8888/](http://192.168.1.43:8888/)
 
 
-### Version Locale
+### Version Locale:
 1. Lancez le serveur:
    ```bash
    python serveur.py
@@ -54,13 +74,16 @@ La communication en temps réel entre le serveur et les clients est gérée par 
 
 ## Fonctionnement
 
-### Fichier `Joueur.py`
+### Fichier `Joueur.py`:
 Le fichier contient la classe `Joueur`, qui modélise les propriétés et comportements des joueurs, tels que leur nom, leur nombre de points, leur propositions, ...
 
-### Fichier `Jeu.py`
-Ce fichier regroupe toutes les fonctions principales du jeu, comme la génération des lettres aléatoires, le tirage des lettres, la recherche du motMax, la comparaion des mots formés par les joueurs jusqu'à l'ajout des points et la sauvegarde des anciennes propositions des joueurs.
+### Fichier `Jeu.py`:
+Le fichier jeu.py regroupe l'ensemble des fonctionnalités principales nécessaires au bon déroulement des différents jeux proposés. Il inclut des classes et des méthodes clés qui assurent la gestion de chaque étape du jeu, telles que la génération aléatoire des lettres à partir d’un sac de tuiles ,le tirage des lettres pour les joueurs , la recherche du mot le plus long (motMax) dans certaines variantes , la comparaison des mots soumis par les joueurs pour valider leur authenticité et leur conformité au dictionnaire , la gestion des scores, incluant l'attribution des points en fonction des performances des joueurs et la sauvegarde des propositions des joueurs, permettant un suivi des coups joués .
 
-### Serveur Flask `serveur.py`
+Ce fichier contient également la classe JeuBanane, qui centralise la logique des trois versions du jeu de Bananagrams : Banana Solitaire , Banane Café , Chrono Banane .  
+Ces trois versions ont été intégrées dans une seule classe car elles reposent sur des mécanismes similaires, comme la gestion des lettres, la validation des mots, et la vérification des plateaux. Cela permet de mutualiser le code tout en conservant la spécificité de chaque variante.
+
+### Serveur Flask `serveur.py`:
 Ce fichier permet de gérer:
 - La gestion des routes (ex : affichage de la page d'acceuil, affichage du plateau, gestion des boutons de tirage de lettres et affichage du classement des joueurs).
 - Les appels aux différentes fonctions du fichier Jeu.py et Jeu_OptiMot.py
@@ -68,11 +91,13 @@ Ce fichier permet de gérer:
 
 À noté : le jeu Opti'Mot est un travail en progrès, le fichier inclut l'inscription pour pouvoir se connecter au jeu avec un nombre maximum de joueurs mais on peut pas y jouer encore.
 
-### Fichier `Jeu_Local.py`
+### Fichier `Jeu_Local.py`:
 Ce fichier permet de jouer depuis le terminal en se connectant au serveur, le joueur a la possibilité de rejoindre la même partie que les autres joueurs web. Il permet aussi la communication avec le serveur pour synchroniser les actions de jeu.
 
-### Fichier `Jeu_OptiMot.py`
+### Fichier `Jeu_OptiMot.py`:
 Ce fichier regroupe quelques fonctions principales du jeu, comme la distributions des cartes aux joueurs et dans le plateau, placement des lettres dans les colonnes du plateau pour former des mots, vérification de la validité du mot écrit, recouvrement des lettres et le pouvoir de jeter et piocher une ou plusieurs cartes.
 
 
+### Fichier `bananaSolver.py`:
+Ce fichier contient une fonction bananaSolver(tirage) qui prend en entrée une chaîne de lettres et génère une grille sous forme de liste de listes. Chaque case de cette grille représente soit une lettre du tirage, soit une case vide (indiquée par un '.'). Le but de cette fonction est de trouver une disposition des lettres qui respecte les règles du jeu, tout en étant la plus optimale possible. Pour tester la performance de cette solution, des mesures de temps seront effectuées sur des tirages de tailles variées. Le projet est organisé de manière indépendante et contient un fichier requirements.txt qui liste les dépendances nécessaires pour l'exécution du solver. Ce code a été conçu de manière à être facilement intégré dans un environnement de test pour valider son efficacité.	
 
